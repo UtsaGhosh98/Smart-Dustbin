@@ -3,6 +3,7 @@
 #include <Adafruit_ESP8266.h>
 
 Servo myservo;
+Servo myservo1;
 #define RX 10
 #define TX 11
 String AP = "utsa08";       
@@ -15,13 +16,15 @@ int countTrueCommand;
 int countTimeCommand; 
 boolean found = false; 
 float valSensor = 1;
+float valSensor1 = 1;
+
 SoftwareSerial esp8266(RX,TX); 
 
 int pos = 0;
 
 /* sensor var */
  
-int no_of_bins = 2;
+int no_of_sens = 2;
 int trigPin[2] = {6,8};
 int echoPin[2] = {7,9};
 float duration;
@@ -44,6 +47,7 @@ void setup() {
       pinMode(echoPin[i], INPUT);
   }
   myservo.attach(9);
+ myservo.attach(2);
 }
 void loop() {
  int i;
@@ -53,9 +57,26 @@ void loop() {
     valSensor = getSensorData(i);
     getData = getData + "&" + field[i] + "=" + String(valSensor);
  }
+ valSensor1 = getSensorData(2);
+ /*****************open lid *************/
+ if(valsensor < 8){          //threshold = 8 cm
+   for (pos = 0; pos <= 120; pos += 1) { // goes from 0 degrees to 180 degrees
+    // in steps of 1 degree
+    myservo.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15ms for the servo to reach the position
+  }
+ }
+  delay(5000);   //wait for 5 sec
+ /*************close lid ********/
+ else{
+  for (pos = 120; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
+    myservo.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15ms for the servo to reach the position
+  }
+ }
  
  /*******Sprinkler*********/
- if(valSensor>30){
+
 for (pos = 0; pos <= 180; pos += 1) { // goes from 0 degrees to 180 degrees
     // in steps of 1 degree
     myservo.write(pos);              // tell servo to go to position in variable 'pos'
@@ -65,7 +86,7 @@ for (pos = 0; pos <= 180; pos += 1) { // goes from 0 degrees to 180 degrees
     myservo.write(pos);              // tell servo to go to position in variable 'pos'
     delay(15);                       // waits 15ms for the servo to reach the position
   }
- }
+ 
  
  /**************************/
  sendCommand("AT+CIPMUX=1",5,"OK");
@@ -75,7 +96,7 @@ for (pos = 0; pos <= 180; pos += 1) { // goes from 0 degrees to 180 degrees
  sendCommand("AT+CIPCLOSE=0",5,"OK");
  
  /******send message to pickup *****/
- if(valsensor > 50){
+ if(valsensor1 > 50){
    esp8266.println("Dustbin full");
 }
  /*********************************/
