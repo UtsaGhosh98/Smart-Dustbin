@@ -1,4 +1,8 @@
 #include <SoftwareSerial.h>
+#include<Servo.h>
+#include <Adafruit_ESP8266.h>
+
+Servo myservo;
 #define RX 10
 #define TX 11
 String AP = "utsa08";       
@@ -13,7 +17,7 @@ boolean found = false;
 float valSensor = 1;
 SoftwareSerial esp8266(RX,TX); 
 
-
+int pos = 0;
 
 /* sensor var */
  
@@ -39,6 +43,7 @@ void setup() {
       pinMode(trigPin[i], OUTPUT);
       pinMode(echoPin[i], INPUT);
   }
+  myservo.attach(9);
 }
 void loop() {
  int i;
@@ -48,12 +53,32 @@ void loop() {
     valSensor = getSensorData(i);
     getData = getData + "&" + field[i] + "=" + String(valSensor);
  }
+ 
+ /*******Sprinkler*********/
+ if(valSensor>30){
+for (pos = 0; pos <= 180; pos += 1) { // goes from 0 degrees to 180 degrees
+    // in steps of 1 degree
+    myservo.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15ms for the servo to reach the position
+  }
+  for (pos = 180; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
+    myservo.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15ms for the servo to reach the position
+  }
+ }
+ 
+ /**************************/
  sendCommand("AT+CIPMUX=1",5,"OK");
  sendCommand("AT+CIPSTART=0,\"TCP\",\""+ HOST +"\","+ PORT,15,"OK");
  sendCommand("AT+CIPSEND=0," +String(getData.length()+4),4,">");
  esp8266.println(getData);delay(1500);countTrueCommand++;
  sendCommand("AT+CIPCLOSE=0",5,"OK");
+ 
+ /******send message to pickup *****/
+ if(valsensor > 50){
+   esp8266.println("Dustbin full");
 }
+ /*********************************/
 float getSensorData(int bin_no){
        
          digitalWrite(trigPin[bin_no], LOW);
